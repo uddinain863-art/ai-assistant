@@ -1,21 +1,47 @@
-[app]
-title = Mustara AI
-package.name = mustaraai
-package.domain = org.mustara
-source.dir = .
-source.include_exts = py,png,jpg,kv,atlas
-version = 0.1
-requirements = python3,kivy,pyjnius
-orientation = portrait
+name: Build Android APK
 
-[buildozer]
-log_level = 2
-warn_on_root = 1
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
 
-[app:android]
-android.permissions = INTERNET
-android.api = 33
-android.minapi = 21
-android.ndk = 25b
-android.archs = arm64-v8a
-android.allow_backup = True
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+
+      - name: Install Buildozer and Cython
+        run: |
+          pip install --upgrade pip
+          pip install "cython<3.0.0"
+          pip install buildozer
+
+      - name: Build with Buildozer
+        run: |
+          buildozer -v android debug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mustara-APK
+          path: bin/*.apk
+          
